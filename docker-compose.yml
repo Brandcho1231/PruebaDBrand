@@ -1,0 +1,64 @@
+version: '3.4'
+services:
+  server:
+    container_name: "prueba_nginx"
+    image: nginx:stable-alpine
+    depends_on:
+      - app
+    links:
+      - app
+    volumes:
+      - "./nginx/conf.d:/etc/nginx/conf.d"
+      - ".:/var/www"
+    ports:
+      - 80:80
+    networks:
+      - prueba_network
+  app:
+    container_name: 'prueba_usc'
+    build:
+      context: ./.dockerconfig
+      dockerfile: Dockerfile
+    depends_on:
+      - mariadb
+    links:
+      - mariadb
+    volumes:
+      - ".:/var/www"
+    networks:
+      - prueba_network
+  phpmyadmin:
+    container_name: 'prueba_pma'
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: mariadb
+      PMA_ARBITRARY: 1
+    depends_on:
+      - mariadb
+    ports:
+      - 81:80
+    networks:
+      - prueba_network
+    links:
+      - mariadb
+  mariadb:
+    container_name: 'prueba_mariadb'
+    image: mariadb:latest
+    env_file:
+      - .env
+    environment:
+      MARIADB_ROOT_PASSWORD: '${DB_MYSQL_PASSWORD}'
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+    ports:
+      - 3306:3306
+    networks:
+      - prueba_network
+    volumes:
+      - database:/var/lib/mysql
+  
+networks:
+  prueba_network:
+    driver: bridge
+
+volumes:
+  database:
